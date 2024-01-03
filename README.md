@@ -20,8 +20,6 @@
 <br>
 <p style="font-family: 'CustomFont';"> Please check the official laravel installation guide for server requirements before you start. <a href="https://laravel.com/docs/10.x/pulse">[Official Documentation]</a></p>
 
-<p style="font-family: 'CustomFont';">Clone this repo in your system using the below command .</p>
-
 <p style="font-family: 'CustomFont';"><b>Require the package with Composer:</b></p>
 
 ```shell
