@@ -1,12 +1,20 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.example.com/font/font.css">
 
+![Packagist License (custom server)](https://img.shields.io/packagist/l/vcian/pulse-docker-monitor
+)
+![Packagist Downloads (custom server)](https://img.shields.io/packagist/dt/vcian/pulse-docker-monitor
+)
 
 <h1 align="center" style="font-family: 'CustomFont';"><u>Docker Monitor Card For Laravel Pulse</u></h1>
 
 ## <p style="font-family: 'CustomFont';">_About_</p>
 
+
 <p style="font-family: 'CustomFont'; font-size: 18px">This card will monitor your docker containers and show container statistics with Cpu & Memory Load.</p>
+
+<br>
+<p align="center"><img src="https://raw.githubusercontent.com/vcian/art/main/pulse-docker-monitor/card-ss-new.png" width="100%" alt="Docker Monitor Card"></p>
 
 ## <p style="font-family: 'CustomFont';"><i class="fas fa-cog"></i> _Installation_</p>
 <br>
@@ -14,9 +22,7 @@
 
 <p style="font-family: 'CustomFont';">Clone this repo in your system using the below command .</p>
 
-<p style="font-family: 'CustomFont';"><b>Require the package with Composer:
-
-</b></p>
+<p style="font-family: 'CustomFont';"><b>Require the package with Composer:</b></p>
 
 ```shell
     composer require vcian/pulse-docker-monitor
@@ -87,14 +93,15 @@ return [
 ```shell
     php artisan pulse:check
 ```
+## <p style="font-family: 'CustomFont';"> Security
 
-## <p style="font-family: 'CustomFont';">CODING STANDARD</p>
+<p style="font-family: 'CustomFont';">If you discover any security-related issues, please email ruchit.patel@viitor.cloud instead of using the issue tracker. </p>
 
-Please see [CODINGSTANDARD](CODINGSTANDARD.md) for details.
+## <p style="font-family: 'CustomFont';">Credits
 
-## <p style="font-family: 'CustomFont';">GIT STANDARD</p>
+- [All Contributors](../../contributors)
 
-Please see [GITSTANDARD](GITSTANDARD.md) for details.
+## <p style="font-family: 'CustomFont';">License
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-## <p style="font-family: 'CustomFont';">Licence</p>
 
