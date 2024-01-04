@@ -19,11 +19,7 @@ class PulseDockerMonitor extends Card
     {
 
         $containers = Pulse::values('docker_monitor', ['result'])->first();
-
-        $containers = $containers
-            ? json_decode($containers->value, associative: true, flags: JSON_THROW_ON_ERROR)
-            : [];
-
+        $containers = json_decode(optional($containers)->value, true, 512, JSON_THROW_ON_ERROR) ?? [];
         $containers = $this->filterContainers($containers);
         $containers = collect($containers)->take(10);
 
@@ -51,22 +47,16 @@ class PulseDockerMonitor extends Card
      */
     protected function filterContainers($containers = []): array
     {
-        $returnArr = [];
-
-        if ($containers) {
-            foreach ($containers as $cnt) {
-                if (str_contains($cnt['status'], "Exited") || str_contains($cnt['status'], "exited")) {
-                    $cnt['state'] = "Exited";
-                    $cnt['status'] = str_replace("Exited (0) ", "", $cnt['status']);
-                    $cnt['ports'] = "-";
-                } else {
-                    $cnt['state'] = "Running";
-                }
-
-                $returnArr[] = $cnt;
+        return collect($containers)->map(function ($container) {
+            if (str_contains($container['status'], "Exited") || str_contains($container['status'], "exited")) {
+                $container['state'] = "Exited";
+                $container['status'] = str_replace("Exited (0) ", "", $container['status']);
+                $container['ports'] = "-";
+            } else {
+                $container['state'] = "Running";
             }
-        }
 
-        return $returnArr;
+            return $container;
+        })->all();
     }
 }

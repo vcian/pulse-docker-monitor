@@ -53,8 +53,6 @@ class PulseDockerMonitorRecorder
 
         $allContainers = '[' . rtrim(str_replace("\n", ",", $allContainers), ',') . ']';
 
-        $allContainers = $this->filterContainers($allContainers);
-
         $containerStat = match (PHP_OS_FAMILY) {
             'Darwin' => `docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}"`,
             'Linux' => `docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}"`,
@@ -63,11 +61,12 @@ class PulseDockerMonitorRecorder
         };
 
         $containerStat = $this->filterStringToArray($containerStat);
+        $allContainers = $this->filterContainers($allContainers,$containerStat);
 
         if ($containerStat) {
             foreach ($containerStat as $key => $stat) {
                 $this->pulse->record('docker_memory', $stat['Name'], $stat['MEM'], $event->time)->avg()->onlyBuckets();
-                $this->pulse->record('docker_cpu',  $stat['Name'], $stat['CPU'], $event->time)->avg()->onlyBuckets();
+                $this->pulse->record('docker_cpu', $stat['Name'], $stat['CPU'], $event->time)->avg()->onlyBuckets();
             }
         }
 
@@ -77,53 +76,60 @@ class PulseDockerMonitorRecorder
 
 
     /**
+     *
      * @param $allContainers
-     * @return false|string
+     * @param $containerStat
      */
-    protected function filterContainers($allContainers): bool|string
+    protected function filterContainers($allContainers, $containerStat)
     {
-        $tempArr = [];
+        $filteredContainers = [];
 
         if ($allContainers) {
-            $allContainers = json_decode($allContainers,true);
-            foreach ($allContainers as $key => $cont) {
-                preg_match_all('/\d+\/tcp/', $cont['ports'], $matches);
-                $cont['ports'] = implode(', ', array_unique($matches[0]));
-                $tempArr[] = $cont;
+            $decodedContainers = json_decode($allContainers, true);
+            $containerStat = array_column($containerStat, NULL, 'Name'); // Set id as array key
+            if ($decodedContainers !== null) {
+                foreach ($decodedContainers as $key => $container) {
+                    $container['cpu'] = $containerStat[$container['name']]['CPU'] ?? 0;
+                    $container['memory'] = $containerStat[$container['name']]['MEM'] ?? 0;
+                    if (isset($container['ports'])) {
+                        preg_match_all('/\d+\/tcp/', $container['ports'], $matches);
+                        $container['ports'] = implode(', ', array_unique($matches[0]));
+                        $filteredContainers[] = $container;
+                    }
+                }
             }
         }
 
-        return json_encode($tempArr);
+        return json_encode($filteredContainers);
     }
 
     /**
-     * @param null $string
+     * @param string|null $string
      * @return array
      */
-    protected function filterStringToArray($string = null): array
+    protected function filterStringToArray(?string $string = null): array
     {
-        // Define an empty array to store container information
-        $arr = [];
-
-        if ($string) {
-            $array = array_filter(explode("\n", $string));
-            // Process each line (skip the header)
-            for ($i = 1; $i < count($array); $i++) {
-                // Split each line into columns
-                $columns = preg_split('/\s+/', trim($array[$i]));
-
-                // Extract container information
-                $container = array(
-                    'Name' => $columns[0],
-                    'CPU' => $this->percentageToDecimal($columns[1]),
-                    'MEM' => $this->percentageToDecimal($columns[2])
-                );
-                // Add container information to the array
-                $arr[] = $container;
-            }
+        if (empty($string)) {
+            return [];
         }
 
-        return $arr;
+        // Split the input string into an array of lines
+        $lines = array_filter(explode("\n", $string));
+
+        // Process each line (skip the header)
+        $containerArray = array_map(function ($line) {
+            // Split each line into columns
+            $columns = preg_split('/\s+/', trim($line));
+
+            // Extract container information
+            return [
+                'Name' => $columns[0],
+                'CPU' => $this->percentageToDecimal($columns[1]),
+                'MEM' => $this->percentageToDecimal($columns[2]),
+            ];
+        }, array_slice($lines, 1)); // Skip the header
+
+        return $containerArray;
     }
 
     /**
@@ -133,7 +139,6 @@ class PulseDockerMonitorRecorder
     #[Pure] protected function percentageToDecimal($percentage): string
     {
         // Remove the percentage sign and trim any whitespace
-        $percentage = trim($percentage, "%");
-        return $percentage;
+        return trim($percentage, '%');
     }
 }
