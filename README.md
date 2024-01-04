@@ -18,7 +18,7 @@
 ## <p style="font-family: 'CustomFont';"><i class="fas fa-cog"></i> _Installation_</p>
 <br>
 
-<p style="font-family: 'CustomFont'; font-size: 24px">Prerequisites</b></p>
+<p style="font-family: 'CustomFont'; font-size: 24px"><b>Prerequisites</b></p>
 <p style="font-family: 'CustomFont';"> Please check the official laravel installation guide for server requirements before you start. <a href="https://laravel.com/docs/10.x/pulse">[Official Documentation]</a></p>
 
 <p style="font-family: 'CustomFont';"><b>Require the package with Composer:</b></p>

@@ -24,11 +24,16 @@
                         </colgroup>
                         <x-pulse::thead>
                             <tr>
-                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Name</x-pulse::th>
-                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Status</x-pulse::th>
-                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Port</x-pulse::th>
-                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Cpu</x-pulse::th>
-                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Memory</x-pulse::th>
+                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Name
+                                </x-pulse::th>
+                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Status
+                                </x-pulse::th>
+                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Port
+                                </x-pulse::th>
+                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Cpu
+                                </x-pulse::th>
+                                <x-pulse::th class="text-base font-bold text-gray-600 dark:text-gray-300">Memory
+                                </x-pulse::th>
                             </tr>
                         </x-pulse::thead>
                         <tbody>
@@ -52,8 +57,9 @@
                                 <x-pulse::td>
                                     <div class="mt-3 relative flex">
                                         <div wire:key="docker-cpu" class="">
-                                            <div class="text-xl font-bold text-gray-700 dark:text-gray-200 w-14 whitespace-nowrap tabular-nums">
-                                                {{ round($graph[$container['name']]['docker_cpu']->last()) ?? 0 }}%
+                                            <div
+                                                class="text-xl font-bold text-gray-700 dark:text-gray-200 w-14 whitespace-nowrap tabular-nums">
+                                                {{ round($container['cpu']) ?? 0 }}%
                                             </div>
                                         </div>
                                         <div wire:ignore class="h-14 w-full"
@@ -70,11 +76,11 @@
                                     </div>
                                 </x-pulse::td>
                                 <x-pulse::td>
-
                                     <div class="mt-3 relative flex">
                                         <div wire:key="docker-memory" class="  ">
-                                            <div class="text-xl font-bold text-gray-700 dark:text-gray-200 w-14 whitespace-nowrap tabular-nums">
-                                                {{ round($graph[$container['name']]['docker_memory']->last()) ?? 0 }}%
+                                            <div
+                                                class="text-xl font-bold text-gray-700 dark:text-gray-200 w-14 whitespace-nowrap tabular-nums">
+                                                {{ round($container['memory']) ?? 0 }}%
                                             </div>
                                         </div>
                                         <div wire:ignore class="h-14 w-full"
@@ -102,201 +108,135 @@
 
 @script
 <script>
+    const chartConfig = {
+        maintainAspectRatio: false,
+        layout: {
+            autoPadding: false,
+            padding: {
+                top: 1,
+            },
+        },
+        datasets: {
+            line: {
+                borderWidth: 2,
+                borderCapStyle: 'round',
+                pointHitRadius: 10,
+                pointStyle: false,
+                tension: 0.2,
+                spanGaps: false,
+                segment: {
+                    borderColor: (ctx) => ctx.p0.raw === 0 && ctx.p1.raw === 0 ? 'transparent' : undefined,
+                },
+            },
+        },
+        scales: {
+            x: {
+                display: false,
+            },
+            y: {
+                display: false,
+                min: 0,
+                max: 1, // Adjust the max value as needed
+            },
+        },
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                mode: 'index',
+                position: 'nearest',
+                intersect: false,
+                callbacks: {
+                    beforeBody: (context) => context
+                        .map(item => `${item.dataset.label}: ${1 < 1 ? '~' : ''}${item.formattedValue}%`)
+                        .join(', '),
+                    label: () => null,
+                },
+            },
+        },
+    };
+
+    function createChart(type, label, color, data, options) {
+        return new Chart(
+            this.$refs.canvas,
+            {
+                type: type,
+                data: {
+                    labels: this.labels(data),
+                    datasets: [
+                        {
+                            label: label,
+                            borderColor: color,
+                            data: this.scale(data),
+                            order: 1,
+                        },
+                    ],
+                },
+                options: {...chartConfig, ...options},
+            }
+        );
+    }
+
+    function updateChart(chart, graph, containerName, dataKey) {
+        if (chart === undefined) {
+            return;
+        }
+
+        if (graph === undefined && chart) {
+            chart.destroy();
+            chart = undefined;
+            return;
+        }
+
+        chart.data.labels = this.labels(graph[containerName]);
+        chart.options.scales.y.max = this.highest(graph[containerName]);
+        chart.data.datasets[0].data = this.scale(graph[containerName][dataKey]);
+        chart.update();
+    }
+
     Alpine.data('cpuChart', (config) => ({
         containerName: config.containerName,
         containerIndex: config.containerIndex,
         init() {
-            let chart = new Chart(
-                this.$refs.canvas,
-                {
-                    type: 'line',
-                    data: {
-                        labels: this.labels(config.readings),
-                        datasets: [
-                            {
-                                label: 'CPU',
-                                borderColor: '#d5e80d',
-                                data: this.scale(config.readings[config.containerName].docker_cpu),
-                                order: 1,
-                            }
-                        ],
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        layout: {
-                            autoPadding: false,
-                            padding: {
-                                top: 1,
-                            },
-                        },
-                        datasets: {
-                            line: {
-                                borderWidth: 2,
-                                borderCapStyle: 'round',
-                                pointHitRadius: 10,
-                                pointStyle: false,
-                                tension: 0.2,
-                                spanGaps: false,
-                                segment: {
-                                    borderColor: (ctx) => ctx.p0.raw === 0 && ctx.p1.raw === 0 ? 'transparent' : undefined,
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: false,
-                            },
-                            y: {
-                                display: false,
-                                min: 0,
-                                max: this.highest(config.readings),
-                            },
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                position: 'nearest',
-                                intersect: false,
-                                callbacks: {
-                                    beforeBody: (context) => context
-                                        .map(item => `${item.dataset.label}: ${1 < 1 ? '~' : ''}${item.formattedValue+'%'}`)
-                                        .join(', '),
-                                    label: () => null,
-                                },
-                            },
-                        },
-                    },
-                }
-            )
+            let chart = createChart.call(this, 'line', 'CPU', '#d5e80d', config.readings[config.containerName].docker_cpu);
 
             Livewire.on('container-chart-update', ({graph}) => {
-                if (chart === undefined) {
-                    return
-                }
-
-                if (graph === undefined && chart) {
-                    chart.destroy()
-                    chart = undefined
-                    return
-                }
-
-                chart.data.labels = this.labels(graph[config.containerName])
-                chart.options.scales.y.max = this.highest(graph[config.containerName])
-                chart.data.datasets[0].data = this.scale(graph[config.containerName].docker_cpu)
-                chart.update()
-            })
+                updateChart.call(this, chart, graph, config.containerName, 'docker_cpu');
+            });
         },
         labels(readings) {
-            return Object.keys(readings)
-
+            return Object.keys(readings);
         },
         scale(data) {
-            return data
+            return data;
         },
         highest(readings) {
-            return Math.max(...Object.values(readings).map(dataset => Math.max(...Object.values(dataset)))) * (1 / 1)
-        }
-    }))
+            return Math.max(...Object.values(readings).map(dataset => Math.max(...Object.values(dataset)))) * (1 / 1);
+        },
+    }));
 
     Alpine.data('memoryChart', (config) => ({
         containerName: config.containerName,
         containerIndex: config.containerIndex,
         init() {
-            let memory_chart = new Chart(
-                this.$refs.canvas,
-                {
-                    type: 'line',
-                    data: {
-                        labels: this.labels(config.readings),
-                        datasets: [
-                            {
-                                label: 'MEMORY',
-                                borderColor: '#31D70D',
-                                data: this.scale(config.readings[config.containerName].docker_memory),
-                                order: 1,
-                            }
-                        ],
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        layout: {
-                            autoPadding: false,
-                            padding: {
-                                top: 1,
-                            },
-                        },
-                        datasets: {
-                            line: {
-                                borderWidth: 2,
-                                borderCapStyle: 'round',
-                                pointHitRadius: 10,
-                                pointStyle: false,
-                                tension: 0.2,
-                                spanGaps: false,
-                                segment: {
-                                    borderColor: (ctx) => ctx.p0.raw === 0 && ctx.p1.raw === 0 ? 'transparent' : undefined,
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: false,
-                            },
-                            y: {
-                                display: false,
-                                min: 0,
-                                max: this.highest(config.readings),
-                            },
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                position: 'nearest',
-                                intersect: false,
-                                callbacks: {
-                                    beforeBody: (context) => context
-                                        .map(item => `${item.dataset.label}: ${1 < 1 ? '~' : ''}${item.formattedValue+"%"}`)
-                                        .join(', '),
-                                    label: () => null,
-                                },
-                            },
-                        },
-                    },
-                }
-            )
+            let memoryChart = createChart.call(this, 'line', 'MEMORY', '#31D70D', config.readings[config.containerName].docker_memory);
 
             Livewire.on('container-chart-update', ({graph}) => {
-                if (memory_chart === undefined) {
-                    return
-                }
-                if (graph === undefined && memory_chart) {
-                    memory_chart.destroy()
-                    memory_chart = undefined
-                    return
-                }
-
-                memory_chart.data.labels = this.labels(graph[config.containerName])
-                memory_chart.options.scales.y.max = this.highest(graph[config.containerName])
-                memory_chart.data.datasets[0].data = this.scale(graph[config.containerName].docker_memory)
-                memory_chart.update()
-            })
+                updateChart.call(this, memoryChart, graph, config.containerName, 'docker_memory');
+            });
         },
         labels(readings) {
-            return Object.keys(readings)
+            return Object.keys(readings);
         },
         scale(data) {
-            return data
+            return data;
         },
         highest(readings) {
-            return Math.max(...Object.values(readings).map(dataset => Math.max(...Object.values(dataset)))) * (1 / 1)
-        }
-    }))
+            return Math.max(...Object.values(readings).map(dataset => Math.max(...Object.values(dataset)))) * (1 / 1);
+        },
+    }));
+
 </script>
 @endscript
 
