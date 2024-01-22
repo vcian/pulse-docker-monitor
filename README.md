@@ -14,7 +14,7 @@
 <p style="font-family: 'CustomFont'; font-size: 18px">This card will monitor your docker containers and show container statistics with Cpu & Memory Load.</p>
 
 <br>
-<p align="center"><img src="https://raw.githubusercontent.com/vcian/art/main/pulse-docker-monitor/card-ss-new.png" width="100%" alt="Docker Monitor Card"></p>
+<p align="center"><img src="art/card-ss-new.png" width="100%" alt="Docker Monitor Card"></p>
 
 ## <p style="font-family: 'CustomFont';"><i class="fas fa-cog"></i> _Installation_</p>
 <br>
